@@ -6,6 +6,7 @@ import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import hre from "hardhat";
 import ethers from "ethers";
+const helpers = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("MerkleAirdrop", function () {
   // We define a fixture to reuse the same setup in every test.
@@ -72,6 +73,10 @@ describe("MerkleAirdrop", function () {
     it("Should successfully claim airdrop", async function () {
       const { merkleAirdrop, MerkleRoot, airdropToken, owner, proof } = await loadFixture(MerkleAirdropFixture);
 
+      const BAYC_HOLDER = "0x0942ca171d5d0501106ad2052E3cB5564d04d687";
+
+      const baycHolder =  await ethers.impersonateAccount(BAYC_HOLDER);
+
       const claimAmount = ethers.parseUnits("10", 18);
       await airdropToken.mint(claimAmount);
 
@@ -79,18 +84,18 @@ describe("MerkleAirdrop", function () {
 
       const transferToMerkleAirDrop = await airdropToken.transfer(merkleAirdrop, transferAmount);
 
-    const leaf = ethers.solidityKeccak256(["address", "uint256"], [owner, claimAmount]);
+    const leaf = ethers.solidityKeccak256(["address", "uint256"], [baycHolder, claimAmount]);
     const proofGenerated = proof.getHexProof(leaf);
 
     await merkleAirdrop.updateMerkleRoot(MerkleRoot);
 
     await expect(merkleAirdrop.claimAirdrop())
       .to.emit(merkleAirdrop, "AirdropClaimed")
-      .withArgs(owner, claimAmount);
+      .withArgs(baycHolder, claimAmount);
 
-    expect(await merkleAirdrop.claimed(owner)).to.equal(true);
+    expect(await merkleAirdrop.claimed(BAYC_HOLDER)).to.equal(true);
 
-    expect(await airdropToken.balanceOf(owner)).to.equal(claimAmount);
+    expect(await airdropToken.balanceOf(BAYC_HOLDER)).to.equal(claimAmount);
 
    
 
