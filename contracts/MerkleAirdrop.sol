@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract MerkleAirdrop {
@@ -22,11 +23,12 @@ contract MerkleAirdrop {
         _;
     }
 
-    constructor(address _token, bytes32 _merkleRoot, bytes32[] memory _proof) {
+    constructor(address _token, bytes32 _merkleRoot, bytes32[] memory _proof, address _baycToken) {
         token = IERC20(_token);
         merkleRoot = _merkleRoot;
         owner = msg.sender;
         proof = _proof;
+        baycToken = _baycToken;
     }
 
     function claimAirdrop() external {
@@ -37,7 +39,7 @@ contract MerkleAirdrop {
 
         require(!claimed[msg.sender], "Airdrop already claimed.");
 
-        require(IERC20(baycToken).balanceOf(msg.sender) < 1, "You don't have BAYC Token.");
+        require(IERC721(baycToken).balanceOf(msg.sender) < 1, "You don't have BAYC Token.");
        
         bytes32 leaf = keccak256(abi.encodePacked(msg.sender, amount));
 
@@ -70,7 +72,7 @@ contract MerkleAirdrop {
             return false;
         }
         bytes32 leaf = keccak256(abi.encodePacked(msg.sender, amount));
-        
+
         return MerkleProof.verify(proof, merkleRoot, leaf);
     }
    
