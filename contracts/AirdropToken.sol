@@ -31,7 +31,7 @@ contract AirdropToken is ERC20 {
         return super.transferFrom(from, to, amount);
     }
 
-    function allowance(address owner, address spender) public view override returns (uint256) {
+    function allowance(address _owner, address spender) public view override returns (uint256) {
         return super.allowance(owner, spender);
     }
 

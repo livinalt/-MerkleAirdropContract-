@@ -5,7 +5,7 @@ import {
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import hre from "hardhat";
-import ethers from "hardhat";
+import ethers from "ethers";
 
 describe("MerkleAirdrop", function () {
   // We define a fixture to reuse the same setup in every test.
@@ -56,16 +56,7 @@ describe("MerkleAirdrop", function () {
   });
 
   describe("Claim Air Drop", function () {
-    // it("Should claim airdrop", async function () {
-    //   const { merkleAirdrop, addr1, addresZero } = await loadFixture(MerkleAirdropFixture);
-
-    //   const amount = "10000000000000000000";
-    //   const proof = merkleTree.getHexProof(keccak256(`${addr1.address}${amount}`));
-
-    //   await expect(merkleAirdrop.connect(addr1).claimAirdrop(amount, proof))
-    //     .to.emit(merkleAirdrop, "AirdropClaimed")
-    //     .withArgs(addr1.address, amount);
-    // });
+    
 
     it("Check for Address Zero", async function () {
 
@@ -79,28 +70,27 @@ describe("MerkleAirdrop", function () {
     });
     
     it("Should successfully claim airdrop", async function () {
-      const { merkleAirdrop, airdropToken, proof } = await loadFixture(MerkleAirdropFixture);
+      const { merkleAirdrop, MerkleRoot, airdropToken, owner, proof } = await loadFixture(MerkleAirdropFixture);
 
       const claimAmount = ethers.parseUnits("10", 18);
       await airdropToken.mint(claimAmount);
 
-    const amount = ethers.parseEther("10"); // Claimable amount
-    const leaf = ethers.solidityKeccak256(["address", "uint256"], [addr1.address, amount]);
-    const proofGenerated = MerkleProof.getHexProof(leaf); // Generate proof for addr1
+      const transferAmount = ethers.parseUnits("2", 18);
 
-    // Set the correct merkle root in the contract
+      const transferToMerkleAirDrop = await airdropToken.transfer(merkleAirdrop, transferAmount);
+
+    const leaf = ethers.solidityKeccak256(["address", "uint256"], [owner, claimAmount]);
+    const proofGenerated = proof.getHexProof(leaf);
+
     await merkleAirdrop.updateMerkleRoot(MerkleRoot);
 
-    // Call claimAirdrop
-    await expect(merkleAirdrop.connect(addr1).claimAirdrop())
+    await expect(merkleAirdrop.claimAirdrop())
       .to.emit(merkleAirdrop, "AirdropClaimed")
-      .withArgs(addr1.address, amount);
+      .withArgs(owner, claimAmount);
 
-    // Ensure the claim flag is set
-    expect(await merkleAirdrop.claimed(addr1.address)).to.equal(true);
+    expect(await merkleAirdrop.claimed(owner)).to.equal(true);
 
-    // Ensure the token balance of addr1 increased
-    expect(await airdropToken.balanceOf(addr1.address)).to.equal(claimAmount);
+    expect(await airdropToken.balanceOf(owner)).to.equal(claimAmount);
 
    
 
@@ -118,4 +108,6 @@ describe("MerkleAirdrop", function () {
   describe("check qualification", function () {
 
   });
+});
+
 });
