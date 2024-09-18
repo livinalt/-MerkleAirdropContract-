@@ -3,9 +3,8 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-contract AirdropToken is ERC20, IERC20, IERC20Metadata {
+contract AirdropToken is ERC20 {
 
     address public owner;
 
@@ -34,18 +33,6 @@ contract AirdropToken is ERC20, IERC20, IERC20Metadata {
 
     function allowance(address owner, address spender) public view override returns (uint256) {
         return super.allowance(owner, spender);
-    }
-
-    function name() public view override returns (string memory) {
-        return super.name();
-    }
-
-    function symbol() public view override returns (string memory) {
-        return super.symbol();
-    }
-
-    function decimals() public view override returns (uint8) {
-        return super.decimals();
     }
 
     function withdrawTokens(IERC20 _token, uint256 amount) external {
