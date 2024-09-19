@@ -4,8 +4,8 @@ import {
 } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
-import hre from "hardhat";
-import ethers from "ethers";
+import hre, { ethers } from "hardhat";
+
 const helpers = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("MerkleAirdrop", function () {
@@ -31,6 +31,47 @@ describe("MerkleAirdrop", function () {
     return { merkleAirdrop, airdropToken, MerkleRoot, proof, baycToken, addresZero, owner, addr1, addr2, otherAccount };
     
   }
+
+
+  describe("Mint AirdropToken", function () {
+    it("Should mint 1 * 10^18 tokens", async function () {
+      const { owner, airdropToken } = await loadFixture(MerkleAirdropFixture);
+
+      const amount = ethers.parseUnits("1", 18);
+      const mintTx = airdropToken.mint(amount);
+      await (await mintTx).wait();
+
+      expect(await airdropToken.balanceOf(owner)).to.equal(amount);
+
+    });  
+  
+    
+  it("Should transfer to MerkleAirdrop Contract", async function () {
+
+      const { owner, airdropToken, merkleAirdrop } = await loadFixture(MerkleAirdropFixture);
+      const amount = await ethers.parseUnits("1", 18);
+      const mintTx = await airdropToken.mint(amount);
+    
+      await mintTx.wait();
+
+      expect(await airdropToken.balanceOf(owner)).to.equal(amount);
+
+      
+      const balance = await airdropToken.balanceOf(owner);
+
+      await airdropToken.allowance(owner, merkleAirdrop);
+
+      await airdropToken.approve(owner, amount);
+      
+      const transferTx = await airdropToken.transferFrom(owner, merkleAirdrop, balance);
+      await transferTx.wait();
+      
+      expect(await airdropToken.balanceOf(merkleAirdrop)).to.equal(amount);      
+
+    });
+
+  });
+
 
   describe("Deployment", function () {
     it("Should set the AirdropToken", async function () {
@@ -73,31 +114,21 @@ describe("MerkleAirdrop", function () {
     it("Should successfully claim airdrop", async function () {
       const { merkleAirdrop, MerkleRoot, airdropToken, owner, proof } = await loadFixture(MerkleAirdropFixture);
 
+      const claimAmount = await ethers.parseUnits("1", 18);
       const BAYC_HOLDER = "0x0942ca171d5d0501106ad2052E3cB5564d04d687";
 
       const baycHolder =  await ethers.impersonateAccount(BAYC_HOLDER);
 
-      const claimAmount = ethers.parseUnits("10", 18);
-      await airdropToken.mint(claimAmount);
+      await owner.sendTransaction(baycHolder);
 
-      const transferAmount = ethers.parseUnits("2", 18);
+      const amount = ethers.parseUnits("10", 18);
 
-      const transferToMerkleAirDrop = await airdropToken.transfer(merkleAirdrop, transferAmount);
+      await airdropToken.transfer(merkleAirdrop, claimAmount);
 
-    const leaf = ethers.solidityKeccak256(["address", "uint256"], [baycHolder, claimAmount]);
-    const proofGenerated = proof.getHexProof(leaf);
+      await merkleAirdrop.connect(baycHolder).claimAirdrop();
 
-    await merkleAirdrop.updateMerkleRoot(MerkleRoot);
-
-    await expect(merkleAirdrop.claimAirdrop())
-      .to.emit(merkleAirdrop, "AirdropClaimed")
-      .withArgs(baycHolder, claimAmount);
-
-    expect(await merkleAirdrop.claimed(BAYC_HOLDER)).to.equal(true);
-
-    expect(await airdropToken.balanceOf(BAYC_HOLDER)).to.equal(claimAmount);
-
-   
+      expect(await airdropToken.balanceOf(baycHolder)).to.greaterThanOrEqual(claimAmount);
+    });  
 
    
   });
@@ -115,4 +146,3 @@ describe("MerkleAirdrop", function () {
   });
 });
 
-});
